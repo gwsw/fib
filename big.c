@@ -37,6 +37,11 @@ void big_set(BigInt* dst, BigInt* src) {
     *dst = *src;
 }
 
+void big_replace(BigInt* dst, BigInt* src) {
+    big_deinit(dst);
+    big_set(dst, src);
+}
+
 void big_add(BigInt* sum, BigInt* b1, BigInt* b2) {
     int valen = b1->valen;
     if (b2->valen > valen) valen = b2->valen;

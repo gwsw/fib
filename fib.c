@@ -5,27 +5,35 @@
 #include "big.h"
 
 extern int curr_radix;
+#define num_hist 16
 
 static int usage(void) {
+    printf("usage: fib ...\n");
     return 1;
 }
 
 static void fib(u32 f1, u32 f2, u32 n, BigInt* result) {
-    BigInt p[4];
-    big_init(&p[0], f1);
-    big_init(&p[1], f2);
-    big_init(&p[2], f1+f2);
-    big_init(&p[3], f1+f2+f2);
-//printf("[0]="); big_print(&p[0]); printf(" "); big_print(&p[1]); printf(" "); big_print(&p[2]); printf(" "); big_print(&p[3]); printf("\n");
     u32 i;
-    for (i = 4; i < n; ++i) {
-        big_add(&p[i&3], &p[(i+3)&3], &p[(i+2)&3]);
-//printf("[%d]=",(int)i); big_print(&p[i&3]); printf("\n");
+    u32 hm = num_hist - 1;
+    BigInt pp[num_hist];
+    #define pindex(i) (((i)+num_hist) & hm)
+    #define p(i) &pp[pindex(i)]
+    for (i = 0; i < num_hist; ++i)
+        big_init(p(i), (i == 0) ? f1 : (i == 1) ? f2 : 0);
+    for (i = 2; i < n; ++i) {
+        BigInt s;
+printf("add: "); big_print(p(i-1)); printf(" + "); big_print(p(i-2)); printf(" = ");
+        big_add(&s, p(i-1), p(i-2));
+big_print(&s); printf("\n");
+        big_replace(p(i), &s);
+printf("repl[%d:%d] ", i, pindex(i)); big_print(p(i)); printf("\n");
     }
-    big_deinit(&p[n&3]);
-    big_deinit(&p[(n+1)&3]);
-    big_deinit(&p[(n+2)&3]);
-    big_set(result, &p[(n+3)&3]);
+    for (i = 0; i < num_hist; ++i) {
+        if (i == pindex(n-1))
+            big_set(result, p(i));
+        else 
+            big_deinit(p(i));
+    }
 }
 
 static void test(int test_loops) {
@@ -42,7 +50,7 @@ int main(int argc, char* argv[]) {
     u32 n = 1;
     int ch;
     int test_loops = 0;
-    while ((ch = getopt(argc, argv, "t:x")) >= 0) {
+    while ((ch = getopt(argc, argv, "dt:x")) >= 0) {
         switch (ch) {
         case 'd':
             curr_radix = 10;
